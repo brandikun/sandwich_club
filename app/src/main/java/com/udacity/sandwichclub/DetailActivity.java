@@ -3,17 +3,25 @@ package com.udacity.sandwichclub;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.udacity.sandwichclub.model.Sandwich;
 import com.udacity.sandwichclub.utils.JsonUtils;
 
+import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class DetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_POSITION = "extra_position";
     private static final int DEFAULT_POSITION = -1;
+    private static final String TAG = "DetailActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,14 +44,21 @@ public class DetailActivity extends AppCompatActivity {
 
         String[] sandwiches = getResources().getStringArray(R.array.sandwich_details);
         String json = sandwiches[position];
-        Sandwich sandwich = JsonUtils.parseSandwichJson(json);
+        Sandwich sandwich = null;
+        try {
+            sandwich = JsonUtils.parseSandwichJson(json);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
         if (sandwich == null) {
             // Sandwich data unavailable
             closeOnError();
             return;
         }
 
-        populateUI();
+        populateUI(sandwich);
+
         Picasso.with(this)
                 .load(sandwich.getImage())
                 .into(ingredientsIv);
@@ -56,7 +71,35 @@ public class DetailActivity extends AppCompatActivity {
         Toast.makeText(this, R.string.detail_error_message, Toast.LENGTH_SHORT).show();
     }
 
-    private void populateUI() {
+    private void populateUI(Sandwich sandwich) {
+        //initialize views
+        TextView originTv = findViewById(R.id.origin_tv);
+        TextView descriptionTv = findViewById(R.id.description_tv);
+        TextView ingredientsTv = findViewById(R.id.ingredients_tv);
+        TextView alsoKnownTv = findViewById(R.id.also_known_tv);
 
+        //set simple strings
+        originTv.setText(sandwich.getPlaceOfOrigin());
+        descriptionTv.setText(sandwich.getDescription());
+
+        //check if lists are populated and then append each new element. If an element
+        //exists after the current element, add a comma
+        if(sandwich.getIngredients() != null && sandwich.getIngredients().size() > 0) {
+            List<String> ingredients = sandwich.getIngredients();
+            for(int position = 0; position < ingredients.size(); position ++) {
+                ingredientsTv.append(ingredients.get(position));
+                if(sandwich.getIngredients().size() > position + 1)
+                    ingredientsTv.append(", ");
+            }
+        }
+
+        if(sandwich.getAlsoKnownAs() != null && sandwich.getAlsoKnownAs().size() > 0) {
+            List<String> alsoKnownAsList = sandwich.getAlsoKnownAs();
+            for(int position = 0; position < alsoKnownAsList.size(); position ++) {
+                alsoKnownTv.append(alsoKnownAsList.get(position));
+                if(sandwich.getAlsoKnownAs().size() > position + 1)
+                    alsoKnownTv.append(", ");
+            }
+        }
     }
 }
